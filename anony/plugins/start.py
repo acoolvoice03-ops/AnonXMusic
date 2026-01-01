@@ -8,13 +8,33 @@ from pyrogram import enums, filters, types
 from anony import app, config, db, lang
 from anony.helpers import buttons, utils
 
+# ---------------- Safe Helper ----------------
+def safe_markup(mrk):
+    """
+    Ensures reply_markup is never None and contains no invalid buttons
+    """
+    if not mrk:
+        return None
+    # Remove empty rows or None buttons
+    clean_rows = []
+    for row in mrk.inline_keyboard:
+        clean_row = [b for b in row if b is not None]
+        if clean_row:
+            clean_rows.append(clean_row)
+    if not clean_rows:
+        return None
+    mrk.inline_keyboard = clean_rows
+    return mrk
 
+
+# ---------------- Commands ----------------
 @app.on_message(filters.command(["help"]) & filters.private & ~app.bl_users)
 @lang.language()
 async def _help(_, m: types.Message):
+    markup = safe_markup(buttons.help_markup(m.lang))
     await m.reply_text(
         text=m.lang["help_menu"],
-        reply_markup=buttons.help_markup(m.lang),
+        reply_markup=markup,
         quote=True,
     )
 
@@ -35,7 +55,7 @@ async def start(_, message: types.Message):
         else message.lang["start_gp"].format(app.name)
     )
 
-    key = buttons.start_key(message.lang, private)
+    key = safe_markup(buttons.start_key(message.lang, private))
     await message.reply_photo(
         photo=config.START_IMG,
         caption=_text,
@@ -61,11 +81,12 @@ async def settings(_, message: types.Message):
     admin_only = await db.get_play_mode(message.chat.id)
     cmd_delete = await db.get_cmd_delete(message.chat.id)
     _language = await db.get_lang(message.chat.id)
+    markup = safe_markup(
+        buttons.settings_markup(message.lang, admin_only, cmd_delete, _language, message.chat.id)
+    )
     await message.reply_text(
         text=message.lang["start_settings"].format(message.chat.title),
-        reply_markup=buttons.settings_markup(
-            message.lang, admin_only, cmd_delete, _language, message.chat.id
-        ),
+        reply_markup=markup,
         quote=True,
     )
 
