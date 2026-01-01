@@ -3,96 +3,44 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ---------------- HELPERS ---------------- #
-
-def get_int(var, default=0):
-    try:
-        return int(getenv(var, default))
-    except (TypeError, ValueError):
-        return default
-
-def get_str(var, default=None):
-    return getenv(var, default)
-
-def get_bool(var, default=False):
-    val = getenv(var)
-    if val is None:
-        return default
-    return val.lower() in ("true", "1", "yes", "on")
-
-# ---------------- CONFIG ---------------- #
-
 class Config:
-    def __init__(self):
+    def __init__(self):
+        self.API_ID = int(getenv("API_ID", 29198115))
+        self.API_HASH = getenv("API_HASH", "c95739ca773e2e35efe11b406b59af3b")
 
-        # Telegram API
-        self.API_ID = get_int("API_ID", 29198115))
-        self.API_HASH = get_str("API_HASH","c95739ca773e2e35efe11b406b59af3b")
+        self.BOT_TOKEN = getenv("BOT_TOKEN","8577192556:AAH_VGCGYNA_s-_NFXeyXMb12_J7UIGK4Og")
+        self.MONGO_URL = getenv("MONGO_URL", "mongodb+srv://Bosshub:JMaff0WvazwNxKky@cluster0.l0xcoc1.mongodb.net/?appName=Cluster0")
 
-        # Bot
-        self.BOT_TOKEN = get_str("BOT_TOKEN","8577192556:AAH_VGCGYNA_s-_NFXeyXMb12_J7UIGK4Og")
+        self.LOGGER_ID = int(getenv("LOGGER_ID", 0))
+        self.OWNER_ID = int(getenv("OWNER_ID", 8525952693))
 
-        # Database
-        self.MONGO_URL = get_str("MONGO_URL","mongodb+srv://Bossaahubdb:pmDPc44XLRB097vm@cluster0.unuj1k8.mongodb.net/?appName=Cluster0")
+        self.DURATION_LIMIT = int(getenv("DURATION_LIMIT", 60)) * 60
+        self.QUEUE_LIMIT = int(getenv("QUEUE_LIMIT", 20))
+        self.PLAYLIST_LIMIT = int(getenv("PLAYLIST_LIMIT", 20))
 
-        # Owner & Logger
-        self.OWNER_ID = get_int("OWNER_ID", 8525952693))
-        self.LOGGER_ID = get_int("LOGGER_ID", 0)  # 0 = disabled (NO CRASH)
+        self.SESSION1 = getenv("SESSION", "AQH-pWEAdpaX9RNqogQdjH2lHvYJ3nk4bldabDXDs4CAb7CxZ0apKRRykSeqtdJ_BEQN9rE7sBRddyJ07FUJGi2xqRIp6pU2UHAwa7gkRW1674Gd-emSNECHyPcWVyzgzvvJm1t3nJ_OEJIZf4q3C_0daxYZypOO7ZROhZn48FSnfkT0BOHDxHcVxYObjk8nRj8q2qsu3dF2Uw_59iQsSu4OCg1cRlVQSiUeCs6U1HW1MPEATUK3casd9_YNDRYM0049etmT6i0VHkQgKD47BIj2fbhMCDscuke70ix3Bj1W_GkJXCU55WgHJGrjbRBdl45LXxw-iPqUEczpOALZD8WqTjby6gAAAAH9Kh65AA")
+        self.SESSION2 = getenv("SESSION2", None)
+        self.SESSION3 = getenv("SESSION3", None)
 
-        # Assistant Sessions
-        self.SESSION1 = get_str("SESSION")
-        self.SESSION2 = get_str("SESSION2")
-        self.SESSION3 = get_str("SESSION3")
+        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/FallenAssociation")
+        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/DevilsHeavenMF")
 
-        # Limits
-        self.DURATION_LIMIT = get_int("DURATION_LIMIT", 60) * 60
-        self.QUEUE_LIMIT = get_int("QUEUE_LIMIT", 20)
-        self.PLAYLIST_LIMIT = get_int("PLAYLIST_LIMIT", 20)
+        self.AUTO_END: bool = getenv("AUTO_END", False)
+        self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", False)
+        self.VIDEO_PLAY: bool = getenv("VIDEO_PLAY", True)
+        self.COOKIES_URL = [
+            url for url in getenv("COOKIES_URL", "").split(" ")
+            if url and "batbin.me" in url
+        ]
+        self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://te.legra.ph/file/3e40a408286d4eda24191.jpg")
+        self.PING_IMG = getenv("PING_IMG", "https://files.catbox.moe/haagg2.png")
+        self.START_IMG = getenv("START_IMG", "https://files.catbox.moe/zvziwk.jpg")
 
-        # Features
-        self.AUTO_END = get_bool("AUTO_END", False)
-        self.AUTO_LEAVE = get_bool("AUTO_LEAVE", False)
-        self.VIDEO_PLAY = get_bool("VIDEO_PLAY", True)
-
-        # Support
-        self.SUPPORT_CHANNEL = get_str("SUPPORT_CHANNEL")
-        self.SUPPORT_CHAT = get_str("SUPPORT_CHAT")
-
-        # Images
-        self.DEFAULT_THUMB = get_str(
-            "DEFAULT_THUMB",
-            "https://te.legra.ph/file/3e40a408286d4eda24191.jpg"
-        )
-        self.PING_IMG = get_str(
-            "PING_IMG",
-            "https://files.catbox.moe/haagg2.png"
-        )
-        self.START_IMG = get_str(
-            "START_IMG",
-            "https://files.catbox.moe/zvziwk.jpg"
-        )
-
-        # Cookies
-        self.COOKIES_URL = [
-            url for url in get_str("COOKIES_URL", "").split()
-            if "batbin.me" in url
-        ]
-
-    # ---------------- CHECK ---------------- #
-
-    def check(self):
-        required = [
-            "API_ID",
-            "API_HASH",
-            "BOT_TOKEN",
-            "MONGO_URL",
-            "OWNER_ID",
-            "SESSION1",
-        ]
-
-        missing = [var for var in required if not getattr(self, var)]
-
-        if missing:
-            raise SystemExit(
-                f"❌ Missing required environment variables: {', '.join(missing)}"
-            )
+    def check(self):
+        missing = [
+            var
+            for var in ["API_ID", "API_HASH", "BOT_TOKEN", "MONGO_URL", "LOGGER_ID", "OWNER_ID", "SESSION1"]
+            if not getattr(self, var)
+        ]
+        if missing:
+            raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
