@@ -1,8 +1,4 @@
 pyrogram==2.0.106
-tgcrypto
-pymongo
-dnspython
-python-dotenv
 aiohttp~=3.13.2
 kurigram>=2.2.15
 pillow~=12.0.0
