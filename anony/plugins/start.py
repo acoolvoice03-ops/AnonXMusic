@@ -10,50 +10,52 @@ from anony import app, config, db, lang
 from anony.helpers import buttons, utils
 
 
-# ---------------- SAFE MARKUP HELPER ----------------
+# ---------------- SAFE MARKUP ----------------
 def safe_markup(markup):
     """
-    Ensures reply_markup is valid and contains no None buttons
+    Completely sanitizes InlineKeyboardMarkup
+    Prevents: 'NoneType' object has no attribute 'write'
     """
-    if not markup or not isinstance(markup, InlineKeyboardMarkup):
+    if not isinstance(markup, InlineKeyboardMarkup):
         return None
 
-    clean_keyboard = []
-
+    rows = []
     for row in markup.inline_keyboard:
         if not row:
             continue
-        clean_row = [btn for btn in row if btn is not None]
-        if clean_row:
-            clean_keyboard.append(clean_row)
 
-    if not clean_keyboard:
+        clean_row = []
+        for btn in row:
+            if btn is not None:
+                clean_row.append(btn)
+
+        if clean_row:
+            rows.append(clean_row)
+
+    if not rows:
         return None
 
-    return InlineKeyboardMarkup(clean_keyboard)
+    return InlineKeyboardMarkup(rows)
 
 
-# ---------------- HELP COMMAND ----------------
+# ---------------- HELP ----------------
 @app.on_message(filters.command(["help"]) & filters.private & ~app.bl_users)
 @lang.language()
-async def _help(_, message: types.Message):
-    markup = safe_markup(buttons.help_markup(message.lang))
+async def _help(_, m: types.Message):
+    markup = safe_markup(buttons.help_markup(m.lang))
 
-    await message.reply_text(
-        text=message.lang["help_menu"],
+    await m.reply_text(
+        text=m.lang["help_menu"],
         reply_markup=markup,
         quote=True,
     )
 
 
-# ---------------- START COMMAND ----------------
+# ---------------- START ----------------
 @app.on_message(filters.command(["start"]))
 @lang.language()
 async def start(_, message: types.Message):
-    if (
-        message.from_user.id in app.bl_users
-        and message.from_user.id not in db.notified
-    ):
+    if message.from_user.id in app.bl_users and message.from_user.id not in db.notified:
         return await message.reply_text(message.lang["bl_user_notify"])
 
     if len(message.command) > 1 and message.command[1] == "help":
@@ -67,9 +69,7 @@ async def start(_, message: types.Message):
         else message.lang["start_gp"].format(app.name)
     )
 
-    markup = safe_markup(
-        buttons.start_key(message.lang, private)
-    )
+    markup = safe_markup(buttons.start_key(message.lang, private))
 
     await message.reply_photo(
         photo=config.START_IMG,
@@ -113,7 +113,7 @@ async def settings(_, message: types.Message):
     )
 
 
-# ---------------- NEW CHAT MEMBER ----------------
+# ---------------- NEW MEMBER ----------------
 @app.on_message(filters.new_chat_members, group=7)
 @lang.language()
 async def _new_member(_, message: types.Message):
@@ -124,7 +124,6 @@ async def _new_member(_, message: types.Message):
 
     for member in message.new_chat_members:
         if member.id == app.id:
-            if await db.is_chat(message.chat.id):
-                return
-            await utils.send_log(message, True)
-            await db.add_chat(message.chat.id)
+            if not await db.is_chat(message.chat.id):
+                await utils.send_log(message, True)
+                await db.add_chat(message.chat.id)
