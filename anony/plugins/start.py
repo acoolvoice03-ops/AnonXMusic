@@ -1,6 +1,5 @@
 # Copyright (c) 2025 AnonymousX1025
-# Licensed under the MIT License.
-# This file is part of AnonXMusic
+# Licensed under the MIT License
 
 import asyncio
 from pyrogram import enums, filters, types
@@ -10,40 +9,25 @@ from anony import app, config, db, lang
 from anony.helpers import buttons, utils
 
 
-# ---------------- SAFE MARKUP ----------------
-def safe_markup(markup):
-    """
-    Completely sanitizes InlineKeyboardMarkup
-    Prevents: 'NoneType' object has no attribute 'write'
-    """
-    if not isinstance(markup, InlineKeyboardMarkup):
+# ---------- SAFE MARKUP ----------
+def safe_markup(mrk):
+    if not mrk or not isinstance(mrk, InlineKeyboardMarkup):
         return None
 
     rows = []
-    for row in markup.inline_keyboard:
-        if not row:
-            continue
+    for row in mrk.inline_keyboard:
+        clean = [btn for btn in row if btn is not None]
+        if clean:
+            rows.append(clean)
 
-        clean_row = []
-        for btn in row:
-            if btn is not None:
-                clean_row.append(btn)
-
-        if clean_row:
-            rows.append(clean_row)
-
-    if not rows:
-        return None
-
-    return InlineKeyboardMarkup(rows)
+    return InlineKeyboardMarkup(rows) if rows else None
 
 
-# ---------------- HELP ----------------
+# ---------- HELP ----------
 @app.on_message(filters.command(["help"]) & filters.private & ~app.bl_users)
 @lang.language()
 async def _help(_, m: types.Message):
     markup = safe_markup(buttons.help_markup(m.lang))
-
     await m.reply_text(
         text=m.lang["help_menu"],
         reply_markup=markup,
@@ -51,10 +35,11 @@ async def _help(_, m: types.Message):
     )
 
 
-# ---------------- START ----------------
+# ---------- START ----------
 @app.on_message(filters.command(["start"]))
 @lang.language()
 async def start(_, message: types.Message):
+
     if message.from_user.id in app.bl_users and message.from_user.id not in db.notified:
         return await message.reply_text(message.lang["bl_user_notify"])
 
@@ -69,12 +54,12 @@ async def start(_, message: types.Message):
         else message.lang["start_gp"].format(app.name)
     )
 
-    markup = safe_markup(buttons.start_key(message.lang, private))
+    key = safe_markup(buttons.start_key(message.lang, private))
 
     await message.reply_photo(
         photo=config.START_IMG,
         caption=text,
-        reply_markup=markup,
+        reply_markup=key,
         quote=not private,
     )
 
@@ -88,7 +73,7 @@ async def start(_, message: types.Message):
             await db.add_chat(message.chat.id)
 
 
-# ---------------- SETTINGS ----------------
+# ---------- SETTINGS ----------
 @app.on_message(filters.command(["playmode", "settings"]) & filters.group & ~app.bl_users)
 @lang.language()
 async def settings(_, message: types.Message):
@@ -113,7 +98,7 @@ async def settings(_, message: types.Message):
     )
 
 
-# ---------------- NEW MEMBER ----------------
+# ---------- NEW MEMBER ----------
 @app.on_message(filters.new_chat_members, group=7)
 @lang.language()
 async def _new_member(_, message: types.Message):
